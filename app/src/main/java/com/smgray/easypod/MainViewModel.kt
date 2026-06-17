@@ -163,6 +163,26 @@ class MainViewModel(
         }
     }
 
+    fun refreshFeed(url: String) {
+        if (feedActionState.value == FeedActionState.Running) return
+        viewModelScope.launch {
+            feedActionState.value = FeedActionState.Running
+            feedActionState.value = try {
+                val result = feedIngestionService.addOrRefresh(url)
+                FeedActionState.Complete(
+                    "Updated ${result.feedTitle} with ${result.episodeCount} episodes" +
+                        if (result.newEpisodeIds.isNotEmpty()) {
+                            " (${result.newEpisodeIds.size} new)"
+                        } else {
+                            ""
+                        },
+                )
+            } catch (error: Exception) {
+                FeedActionState.Failed(error.message ?: "The feed could not be refreshed")
+            }
+        }
+    }
+
     suspend fun searchPodcastDirectory(query: String): List<PodcastDirectoryResult> =
         feedIngestionService.searchDirectory(query)
 

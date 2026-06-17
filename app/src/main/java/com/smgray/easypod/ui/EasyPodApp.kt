@@ -298,6 +298,7 @@ fun EasyPodApp(
                         opmlExporter.launch("easypod-subscriptions.opml")
                     },
                     onDismissAction = viewModel::dismissFeedAction,
+                    onRefreshFeed = viewModel::refreshFeed,
                     onSetAutoDownload = viewModel::setFeedAutoDownload,
                     onCreateCategory = viewModel::createCategory,
                     onSetFeedCategory = viewModel::setFeedCategory,
@@ -747,6 +748,7 @@ private fun FeedsPage(
     onImportOpml: () -> Unit,
     onExportOpml: () -> Unit,
     onDismissAction: () -> Unit,
+    onRefreshFeed: (String) -> Unit,
     onSetAutoDownload: (String, Boolean) -> Unit,
     onCreateCategory: (String) -> Unit,
     onSetFeedCategory: (String, String, Boolean) -> Unit,
@@ -871,6 +873,12 @@ private fun FeedsPage(
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        TextButton(
+                            onClick = { feed.feedUrl?.let(onRefreshFeed) },
+                            enabled = !feed.feedUrl.isNullOrBlank(),
+                        ) {
+                            Text("Refresh")
+                        }
                         TextButton(
                             onClick = {
                                 onSetAutoDownload(feed.id, !feed.autoDownload)
