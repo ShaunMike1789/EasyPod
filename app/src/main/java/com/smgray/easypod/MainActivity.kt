@@ -15,6 +15,7 @@ import com.smgray.easypod.ui.EasyPodTheme
 
 class MainActivity : ComponentActivity() {
     private var incomingIntent by mutableStateOf<Intent?>(null)
+    private var incomingSearchQuery by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,11 +42,22 @@ class MainActivity : ComponentActivity() {
                 val intentToHandle = incomingIntent
                 LaunchedEffect(intentToHandle, viewModel) {
                     intentToHandle?.let {
-                        viewModel.handleIncomingIntent(it)
+                        val query = IncomingSearchIntents.queryFrom(it)
+                        if (query != null) {
+                            incomingSearchQuery = query
+                        } else {
+                            viewModel.handleIncomingIntent(it)
+                        }
                         incomingIntent = null
                     }
                 }
-                EasyPodApp(viewModel)
+                EasyPodApp(
+                    viewModel = viewModel,
+                    externalEpisodeSearchQuery = incomingSearchQuery,
+                    onExternalEpisodeSearchConsumed = {
+                        incomingSearchQuery = null
+                    },
+                )
             }
         }
     }

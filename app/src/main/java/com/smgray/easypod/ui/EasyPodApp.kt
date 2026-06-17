@@ -49,6 +49,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -111,7 +112,11 @@ private enum class EpisodeFilter(val label: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-fun EasyPodApp(viewModel: MainViewModel) {
+fun EasyPodApp(
+    viewModel: MainViewModel,
+    externalEpisodeSearchQuery: String? = null,
+    onExternalEpisodeSearchConsumed: () -> Unit = {},
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -124,6 +129,11 @@ fun EasyPodApp(viewModel: MainViewModel) {
         mutableStateOf<(() -> Unit)?>(null)
     }
     val context = LocalContext.current
+    LaunchedEffect(externalEpisodeSearchQuery) {
+        if (!externalEpisodeSearchQuery.isNullOrBlank()) {
+            section = EasyPodSection.Episodes
+        }
+    }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) {
@@ -238,6 +248,8 @@ fun EasyPodApp(viewModel: MainViewModel) {
             when (section) {
                 EasyPodSection.Episodes -> EpisodesPage(
                     state = state,
+                    externalSearchQuery = externalEpisodeSearchQuery,
+                    onExternalSearchConsumed = onExternalEpisodeSearchConsumed,
                     onImport = {
                         importer.launch(
                             arrayOf(
@@ -467,6 +479,8 @@ private fun DrawerHeader() {
 @Composable
 private fun EpisodesPage(
     state: MainUiState,
+    externalSearchQuery: String?,
+    onExternalSearchConsumed: () -> Unit,
     onImport: () -> Unit,
     onDismissImportMessage: () -> Unit,
     onPlayEpisode: (EpisodeSummary) -> Unit,
@@ -479,6 +493,12 @@ private fun EpisodesPage(
     var query by rememberSaveable { mutableStateOf("") }
     var filter by rememberSaveable { mutableStateOf(EpisodeFilter.All) }
     var selectedEpisodeId by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(externalSearchQuery) {
+        externalSearchQuery?.let { incomingQuery ->
+            query = incomingQuery
+            onExternalSearchConsumed()
+        }
+    }
     val filteredEpisodes = state.library.episodes.filter { episode ->
         val matchesQuery = query.isBlank() ||
             episode.title.contains(query, ignoreCase = true) ||
