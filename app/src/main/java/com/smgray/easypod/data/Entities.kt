@@ -272,6 +272,8 @@ data class FeedSummary(
     val imageUrl: String?,
     val autoDownload: Boolean,
     val maxDownloads: Int,
+    val episodeCount: Int,
+    val unplayedCount: Int,
     val categoryIds: String?,
     val categoryNames: String?,
 )
@@ -291,6 +293,7 @@ data class OpmlExportFeed(
 
 data class EpisodeSummary(
     val id: String,
+    val feedId: String?,
     val title: String,
     val feedTitle: String?,
     val played: Boolean,

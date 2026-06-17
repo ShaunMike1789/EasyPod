@@ -16,13 +16,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -58,11 +63,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.text.HtmlCompat
 import androidx.core.content.ContextCompat
@@ -128,6 +136,7 @@ fun EasyPodApp(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var section by remember { mutableStateOf(EasyPodSection.Episodes) }
+    var selectedFeedId by rememberSaveable { mutableStateOf<String?>(null) }
     var showAddFeedDialog by remember { mutableStateOf(false) }
     var showSleepDialog by remember { mutableStateOf(false) }
     var showNowPlaying by remember { mutableStateOf(false) }
@@ -139,8 +148,12 @@ fun EasyPodApp(
     LaunchedEffect(externalEpisodeSearchQuery) {
         if (!externalEpisodeSearchQuery.isNullOrBlank()) {
             section = EasyPodSection.Episodes
+            selectedFeedId = null
         }
     }
+    val selectedFeedTitle = state.library.feeds
+        .firstOrNull { it.id == selectedFeedId }
+        ?.title
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) {
@@ -202,20 +215,29 @@ fun EasyPodApp(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
-                DrawerHeader()
-                EasyPodSection.entries.forEach { item ->
-                    NavigationDrawerItem(
-                        label = { Text(item.label) },
-                        selected = section == item,
-                        onClick = {
-                            section = item
-                            scope.launch { drawerState.close() }
-                        },
-                        modifier = Modifier.padding(horizontal = 12.dp),
-                    )
-                }
-            }
+            ClassicDrawer(
+                state = state,
+                selectedSection = section,
+                selectedFeedId = selectedFeedId,
+                onOpenSection = { item ->
+                    selectedFeedId = null
+                    section = item
+                    scope.launch { drawerState.close() }
+                },
+                onSelectFeed = { feed ->
+                    selectedFeedId = feed.id
+                    section = EasyPodSection.Episodes
+                    scope.launch { drawerState.close() }
+                },
+                onAddFeed = {
+                    scope.launch { drawerState.close() }
+                    showAddFeedDialog = true
+                },
+                onRefreshAll = {
+                    scope.launch { drawerState.close() }
+                    viewModel.refreshAllFeeds()
+                },
+            )
         },
     ) {
         Scaffold(
@@ -255,6 +277,8 @@ fun EasyPodApp(
             when (section) {
                 EasyPodSection.Episodes -> EpisodesPage(
                     state = state,
+                    selectedFeedId = selectedFeedId,
+                    selectedFeedTitle = selectedFeedTitle,
                     externalSearchQuery = externalEpisodeSearchQuery,
                     onExternalSearchConsumed = onExternalEpisodeSearchConsumed,
                     onImport = {
@@ -471,23 +495,333 @@ fun EasyPodApp(
 }
 
 @Composable
-private fun DrawerHeader() {
+private fun ClassicDrawer(
+    state: MainUiState,
+    selectedSection: EasyPodSection,
+    selectedFeedId: String?,
+    onOpenSection: (EasyPodSection) -> Unit,
+    onSelectFeed: (FeedSummary) -> Unit,
+    onAddFeed: () -> Unit,
+    onRefreshAll: () -> Unit,
+) {
+    ModalDrawerSheet(drawerContainerColor = Color(0xFFF2F2F2)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 18.dp),
+        ) {
+            item {
+                ClassicDrawerHeader(onRefreshAll = onRefreshAll)
+            }
+            item {
+                Text(
+                    "What to Play",
+                    modifier = Modifier.padding(start = 18.dp, top = 22.dp, bottom = 12.dp),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color(0xFF424242),
+                    fontWeight = FontWeight.Light,
+                )
+            }
+            item {
+                DrawerLargeRow(
+                    title = "All feeds",
+                    count = state.library.feedCount,
+                    selected = selectedSection == EasyPodSection.Feeds &&
+                        selectedFeedId == null,
+                    onClick = { onOpenSection(EasyPodSection.Feeds) },
+                )
+            }
+            item {
+                DrawerLargeRow(
+                    title = "All episodes",
+                    count = state.library.episodeCount,
+                    selected = selectedSection == EasyPodSection.Episodes &&
+                        selectedFeedId == null,
+                    onClick = { onOpenSection(EasyPodSection.Episodes) },
+                )
+            }
+
+            val uncategorized = state.library.feeds
+                .filter { it.categoryIdSet().isEmpty() }
+            if (uncategorized.isNotEmpty()) {
+                item {
+                    DrawerCategoryHeader(
+                        title = "Uncategorized",
+                        count = uncategorized.size,
+                        color = Color(0xFF9E9E9E),
+                    )
+                }
+                items(uncategorized, key = { "drawer-feed-${it.id}" }) { feed ->
+                    DrawerFeedRow(
+                        feed = feed,
+                        selected = selectedFeedId == feed.id,
+                        onClick = { onSelectFeed(feed) },
+                    )
+                }
+            }
+
+            state.library.categories.forEach { category ->
+                val feeds = state.library.feeds
+                    .filter { category.id in it.categoryIdSet() }
+                if (feeds.isNotEmpty()) {
+                    item(key = "drawer-category-${category.id}") {
+                        DrawerCategoryHeader(
+                            title = category.name,
+                            count = feeds.size,
+                            color = Color(category.color),
+                        )
+                    }
+                    items(feeds, key = { "drawer-category-${category.id}-${it.id}" }) { feed ->
+                        DrawerFeedRow(
+                            feed = feed,
+                            selected = selectedFeedId == feed.id,
+                            onClick = { onSelectFeed(feed) },
+                        )
+                    }
+                }
+            }
+
+            item {
+                HorizontalDivider(
+                    modifier = Modifier.padding(top = 8.dp),
+                    thickness = 2.dp,
+                    color = Color(0xFFFF8A65),
+                )
+                DrawerActionRow("+", "ADD FEED", accent = true, onClick = onAddFeed)
+                DrawerActionRow("=", "Manage Feeds") {
+                    onOpenSection(EasyPodSection.Feeds)
+                }
+                DrawerActionRow("*", "Settings") {
+                    onOpenSection(EasyPodSection.Settings)
+                }
+                DrawerActionRow("?", "Help & Feedback") {
+                    onOpenSection(EasyPodSection.Settings)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClassicDrawerHeader(onRefreshAll: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .background(Color(0xFF4A4A4A)),
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 26.dp, top = 14.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 150.dp, height = 44.dp)
+                    .align(Alignment.BottomStart)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color(0xFFE21D12)),
+            )
+            Box(
+                modifier = Modifier
+                    .size(width = 102.dp, height = 36.dp)
+                    .align(Alignment.Center)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFFF2A1A)),
+            )
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .align(Alignment.TopStart)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(Color(0xFFBDBDBD)),
+            )
+        }
+        Text(
+            "EASYPOD",
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 28.dp, end = 28.dp),
+            color = Color(0xFFE0E0E0),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Black,
+        )
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                "Updated ${formatDrawerUpdatedDate()}",
+                color = Color(0xFFE0E0E0),
+                style = MaterialTheme.typography.labelMedium,
+            )
+            TextButton(onClick = onRefreshAll) {
+                Text("Refresh", color = Color.White)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DrawerLargeRow(
+    title: String,
+    count: Int,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (selected) Color(0xFFE0E0E0) else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleLarge,
+            color = Color(0xFF5A5A5A),
+            fontWeight = FontWeight.Light,
+        )
+        Text(
+            count.toString(),
+            color = Color(0xFF9E9E9E),
+            style = MaterialTheme.typography.titleMedium,
+        )
+    }
+}
+
+@Composable
+private fun DrawerCategoryHeader(
+    title: String,
+    count: Int,
+    color: Color,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
-            .padding(horizontal = 24.dp, vertical = 28.dp),
+            .padding(top = 4.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 18.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleLarge,
+                color = Color(0xFF5A5A5A),
+                fontWeight = FontWeight.Light,
+            )
+            Text(
+                count.toString(),
+                color = Color(0xFF9E9E9E),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        HorizontalDivider(thickness = 2.dp, color = color)
+    }
+}
+
+@Composable
+private fun DrawerFeedRow(
+    feed: FeedSummary,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (selected) Color(0xFFE5E5E5) else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 28.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        FeedTile(feed)
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                feed.title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color(0xFF4A4A4A),
+                fontWeight = if (feed.unplayedCount > 0) {
+                    FontWeight.SemiBold
+                } else {
+                    FontWeight.Normal
+                },
+            )
+            if (feed.unplayedCount > 0) {
+                Text(
+                    "${feed.unplayedCount} NEW",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF6E6E6E),
+                )
+            }
+        }
+        Text(
+            feed.episodeCount.toString(),
+            color = Color(0xFF8E8E8E),
+            style = MaterialTheme.typography.titleMedium,
+        )
+    }
+}
+
+@Composable
+private fun FeedTile(feed: FeedSummary) {
+    val background = if (feed.imageUrl.isNullOrBlank()) {
+        Color(0xFFFFC928)
+    } else {
+        Color(0xFF607D8B)
+    }
+    Box(
+        modifier = Modifier
+            .size(50.dp)
+            .background(background),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = "EASYPOD",
-            color = MaterialTheme.colorScheme.onPrimary,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Black,
+            feed.title.trim().take(1).uppercase().ifBlank { "=" },
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
         )
+    }
+}
+
+@Composable
+private fun DrawerActionRow(
+    marker: String,
+    title: String,
+    accent: Boolean = false,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 28.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
-            text = "Podcasts, on your terms",
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f),
-            style = MaterialTheme.typography.bodyMedium,
+            marker,
+            modifier = Modifier.width(24.dp),
+            color = if (accent) Color(0xFFFF7043) else Color(0xFF777777),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            title,
+            color = if (accent) Color(0xFFFF7043) else Color(0xFF4A4A4A),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
         )
     }
 }
@@ -495,6 +829,8 @@ private fun DrawerHeader() {
 @Composable
 private fun EpisodesPage(
     state: MainUiState,
+    selectedFeedId: String?,
+    selectedFeedTitle: String?,
     externalSearchQuery: String?,
     onExternalSearchConsumed: () -> Unit,
     onImport: () -> Unit,
@@ -516,6 +852,7 @@ private fun EpisodesPage(
         }
     }
     val filteredEpisodes = state.library.episodes.filter { episode ->
+        val matchesFeed = selectedFeedId == null || episode.feedId == selectedFeedId
         val matchesQuery = query.isBlank() ||
             episode.title.contains(query, ignoreCase = true) ||
             episode.feedTitle?.contains(query, ignoreCase = true) == true
@@ -537,7 +874,7 @@ private fun EpisodesPage(
                     episode.mediaUrl ?: episode.localDownloadPath,
                 ) == EpisodeMediaType.Video
         }
-        matchesQuery && matchesFilter
+        matchesFeed && matchesQuery && matchesFilter
     }
 
     LazyColumn(
@@ -597,7 +934,7 @@ private fun EpisodesPage(
         } else {
             item {
                 Text(
-                    "Recent episodes",
+                    selectedFeedTitle ?: "Recent episodes",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
@@ -2870,6 +3207,9 @@ private fun formatHistoryTimestamp(timestamp: Long): String =
         DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
             .format(Date(timestamp))
     }
+
+private fun formatDrawerUpdatedDate(): String =
+    DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date())
 
 private fun formatBytes(bytes: Long): String = when {
     bytes >= 1024L * 1024L * 1024L ->

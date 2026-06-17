@@ -311,6 +311,17 @@ interface LibraryDao {
                CASE WHEN customDownload IN (1, 4) THEN 1 ELSE 0 END AS autoDownload,
                maxDownloads,
                (
+                   SELECT COUNT(*)
+                   FROM episodes
+                   WHERE episodes.feedId = feeds.id
+               ) AS episodeCount,
+               (
+                   SELECT COUNT(*)
+                   FROM episodes
+                   WHERE episodes.feedId = feeds.id
+                     AND episodes.played = 0
+               ) AS unplayedCount,
+               (
                    SELECT GROUP_CONCAT(feed_categories.categoryId, ',')
                    FROM feed_categories
                    WHERE feed_categories.feedId = feeds.id
@@ -365,6 +376,7 @@ interface LibraryDao {
     @Query(
         """
         SELECT episodes.id AS id,
+               episodes.feedId AS feedId,
                episodes.title AS title,
                feeds.title AS feedTitle,
                episodes.played AS played,
