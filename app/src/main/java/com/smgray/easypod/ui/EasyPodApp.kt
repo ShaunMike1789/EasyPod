@@ -84,6 +84,7 @@ import com.smgray.easypod.data.SmartPlaylistSummary
 import com.smgray.easypod.data.SmartPlayRuleDraft
 import com.smgray.easypod.data.SmartPlayRuleSummary
 import com.smgray.easypod.downloads.DownloadState
+import com.smgray.easypod.feeds.PodcastDirectoryResult
 import com.smgray.easypod.playback.PlaybackUiState
 import com.smgray.easypod.smartplay.SmartPlayRuleEngine
 import com.smgray.easypod.sync.SyncResolution
@@ -377,6 +378,7 @@ fun EasyPodApp(
     if (showAddFeedDialog) {
         AddFeedDialog(
             onDismiss = { showAddFeedDialog = false },
+            onSearch = viewModel::searchPodcastDirectory,
             onAdd = { url ->
                 showAddFeedDialog = false
                 viewModel.addFeed(url)
@@ -708,7 +710,7 @@ private fun EmptyLibraryCard() {
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                "Add a feed URL or import OPML to begin. Podcast search is coming next.",
+                "Search for a podcast, add a feed URL, or import OPML to begin.",
             )
         }
     }
@@ -811,7 +813,9 @@ private fun FeedsPage(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                         )
-                        Text("Add a podcast feed URL or import an OPML subscription list.")
+                        Text(
+                            "Search for a podcast, add a feed URL, or import an OPML subscription list.",
+                        )
                     }
                 }
             }
@@ -1194,15 +1198,70 @@ private fun ActionMessage(
 @Composable
 private fun AddFeedDialog(
     onDismiss: () -> Unit,
+    onSearch: suspend (String) -> List<PodcastDirectoryResult>,
     onAdd: (String) -> Unit,
 ) {
     var url by remember { mutableStateOf("") }
+    var query by rememberSaveable { mutableStateOf("") }
+    var searching by remember { mutableStateOf(false) }
+    var searchError by remember { mutableStateOf<String?>(null) }
+    var searchResults by remember { mutableStateOf<List<PodcastDirectoryResult>>(emptyList()) }
+    var searched by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add podcast feed") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Enter an RSS or Atom feed URL.")
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text("Search by podcast name, or paste an RSS or Atom feed URL.")
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text("Podcast name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Button(
+                    enabled = query.isNotBlank() && !searching,
+                    onClick = {
+                        scope.launch {
+                            searching = true
+                            searched = true
+                            searchError = null
+                            searchResults = try {
+                                onSearch(query)
+                            } catch (error: Exception) {
+                                searchError = error.message ?: "Podcast search failed"
+                                emptyList()
+                            } finally {
+                                searching = false
+                            }
+                        }
+                    },
+                ) {
+                    Text(if (searching) "Searching..." else "Search podcasts")
+                }
+                if (searching) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+                searchError?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error)
+                }
+                if (searched && !searching && searchError == null && searchResults.isEmpty()) {
+                    Text("No podcasts found.")
+                }
+                searchResults.forEach { result ->
+                    PodcastDirectoryResultRow(
+                        result = result,
+                        onAdd = { onAdd(result.feedUrl) },
+                    )
+                }
+                HorizontalDivider()
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
@@ -1224,6 +1283,45 @@ private fun AddFeedDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
+}
+
+@Composable
+private fun PodcastDirectoryResultRow(
+    result: PodcastDirectoryResult,
+    onAdd: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onAdd),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Text(
+                result.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            result.author?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall)
+            }
+            if (result.genres.isNotEmpty()) {
+                Text(
+                    result.genres.take(3).joinToString(" / "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Text(
+                result.feedUrl,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+    }
 }
 
 @Composable

@@ -17,6 +17,7 @@ import com.smgray.easypod.data.SmartPlayRuleDraft
 import com.smgray.easypod.downloads.DownloadState
 import com.smgray.easypod.downloads.EpisodeDownloadManager
 import com.smgray.easypod.feeds.FeedIngestionService
+import com.smgray.easypod.feeds.PodcastDirectoryResult
 import com.smgray.easypod.migration.LegacyBackupImporter
 import com.smgray.easypod.playback.PlaybackConnection
 import com.smgray.easypod.playback.PlaybackUiState
@@ -161,6 +162,9 @@ class MainViewModel(
             }
         }
     }
+
+    suspend fun searchPodcastDirectory(query: String): List<PodcastDirectoryResult> =
+        feedIngestionService.searchDirectory(query)
 
     fun importOpml(uri: Uri) {
         if (feedActionState.value == FeedActionState.Running) return

@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 data class FeedRefreshResult(
@@ -141,6 +142,33 @@ class FeedIngestionService(
                 episodeCount = episodes.size,
                 newEpisodeIds = newEpisodeIds,
             )
+        }
+
+    suspend fun searchDirectory(query: String): List<PodcastDirectoryResult> =
+        withContext(Dispatchers.IO) {
+            val term = query.trim()
+            require(term.isNotBlank()) { "Enter a podcast name to search" }
+            val url = ITUNES_SEARCH_URL.toHttpUrl().newBuilder()
+                .addQueryParameter("media", "podcast")
+                .addQueryParameter("entity", "podcast")
+                .addQueryParameter("country", "US")
+                .addQueryParameter("limit", DIRECTORY_SEARCH_LIMIT.toString())
+                .addQueryParameter("term", term)
+                .build()
+            val request = Request.Builder()
+                .url(url)
+                .header("User-Agent", "EasyPod/${BuildConfig.VERSION_NAME}")
+                .header("Accept", "application/json")
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw IOException("Podcast search failed with HTTP ${response.code}")
+                }
+                PodcastDirectorySearchParser.parse(
+                    LimitedInputStream(response.body.byteStream(), MAX_DIRECTORY_BYTES),
+                )
+            }
         }
 
     suspend fun importOpml(uri: Uri): OpmlImportResult = withContext(Dispatchers.IO) {
@@ -279,6 +307,9 @@ class FeedIngestionService(
     }
 
     private companion object {
+        const val DIRECTORY_SEARCH_LIMIT = 20
+        const val ITUNES_SEARCH_URL = "https://itunes.apple.com/search"
+        const val MAX_DIRECTORY_BYTES = 2L * 1024L * 1024L
         const val MAX_FEED_BYTES = 10L * 1024L * 1024L
         const val MAX_OPML_BYTES = 5L * 1024L * 1024L
     }
