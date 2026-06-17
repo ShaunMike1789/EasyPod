@@ -1,5 +1,6 @@
 package com.smgray.easypod
 
+import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -129,6 +130,16 @@ class MainViewModel(
             } catch (error: Exception) {
                 ImportState.Failed(error.message ?: "The import could not be completed")
             }
+        }
+    }
+
+    fun handleIncomingIntent(intent: Intent) {
+        when (val request = IncomingPodcastIntents.from(intent)) {
+            is IncomingPodcastRequest.ImportLegacyBackup -> importLegacyBackup(request.uri)
+            is IncomingPodcastRequest.ImportOpml -> importOpml(request.uri)
+            is IncomingPodcastRequest.RestoreBackup -> restoreBackup(request.uri)
+            is IncomingPodcastRequest.Subscribe -> addFeed(request.feedUrl)
+            null -> Unit
         }
     }
 
