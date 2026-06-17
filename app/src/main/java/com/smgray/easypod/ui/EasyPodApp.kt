@@ -86,6 +86,8 @@ import com.smgray.easypod.data.SmartPlayRuleDraft
 import com.smgray.easypod.data.SmartPlayRuleSummary
 import com.smgray.easypod.downloads.DownloadState
 import com.smgray.easypod.feeds.PodcastDirectoryResult
+import com.smgray.easypod.media.EpisodeMediaClassifier
+import com.smgray.easypod.media.EpisodeMediaType
 import com.smgray.easypod.playback.PlaybackUiState
 import com.smgray.easypod.smartplay.SmartPlayRuleEngine
 import com.smgray.easypod.sync.SyncResolution
@@ -110,6 +112,8 @@ private enum class EpisodeFilter(val label: String) {
     Queued("Queued"),
     Downloaded("Downloaded"),
     Locked("Locked"),
+    Audio("Audio"),
+    Video("Video"),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -520,6 +524,17 @@ private fun EpisodesPage(
             EpisodeFilter.Queued -> episode.inQueue
             EpisodeFilter.Downloaded -> episode.localDownloadPath != null
             EpisodeFilter.Locked -> episode.locked
+            EpisodeFilter.Audio ->
+                EpisodeMediaClassifier.classify(
+                    episode.mimeType,
+                    episode.mediaUrl ?: episode.localDownloadPath,
+                ) == EpisodeMediaType.Audio
+
+            EpisodeFilter.Video ->
+                EpisodeMediaClassifier.classify(
+                    episode.mimeType,
+                    episode.mediaUrl ?: episode.localDownloadPath,
+                ) == EpisodeMediaType.Video
         }
         matchesQuery && matchesFilter
     }
@@ -1063,6 +1078,12 @@ private fun EpisodeRow(
             TextButton(onClick = onInfo) { Text("Info") }
         }
         val status = buildList {
+            add(
+                EpisodeMediaClassifier.labelFor(
+                    episode.mimeType,
+                    episode.mediaUrl ?: episode.localDownloadPath,
+                ),
+            )
             if (episode.played) add("Played")
             if (episode.locked) add("Locked")
             if (episode.localDownloadPath != null) add("Offline")

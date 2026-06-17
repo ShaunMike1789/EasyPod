@@ -371,6 +371,7 @@ interface LibraryDao {
                episodes.locked AS locked,
                episodes.publishedAt AS publishedAt,
                episodes.mediaUrl AS mediaUrl,
+               episodes.mimeType AS mimeType,
                episodes.postUrl AS postUrl,
                episodes.positionMs AS positionMs,
                episodes.durationMs AS durationMs,

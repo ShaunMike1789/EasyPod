@@ -297,6 +297,7 @@ data class EpisodeSummary(
     val locked: Boolean,
     val publishedAt: Long?,
     val mediaUrl: String?,
+    val mimeType: String?,
     val postUrl: String?,
     val positionMs: Long,
     val durationMs: Long,

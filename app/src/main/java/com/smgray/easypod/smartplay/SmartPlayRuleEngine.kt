@@ -2,6 +2,8 @@ package com.smgray.easypod.smartplay
 
 import com.smgray.easypod.data.SmartPlayCandidate
 import com.smgray.easypod.downloads.DownloadState
+import com.smgray.easypod.media.EpisodeMediaClassifier
+import com.smgray.easypod.media.EpisodeMediaType
 import kotlin.random.Random
 
 data class SmartPlayRuleSpec(
@@ -63,19 +65,15 @@ object SmartPlayRuleEngine {
         requiredType: Int,
     ): Boolean {
         if (requiredType == MEDIA_ANY) return true
-        val mime = candidate.mimeType.orEmpty().lowercase()
-        val url = candidate.mediaUrl.orEmpty().substringBefore('?').lowercase()
-        val actualType = when {
-            mime.startsWith("video/") ||
-                url.endsWith(".mp4") ||
-                url.endsWith(".m4v") -> MEDIA_VIDEO
-
-            mime.startsWith("image/") ||
-                url.endsWith(".jpg") ||
-                url.endsWith(".jpeg") ||
-                url.endsWith(".png") -> MEDIA_IMAGE
-
-            else -> MEDIA_AUDIO
+        val actualType = when (
+            EpisodeMediaClassifier.classify(
+                candidate.mimeType,
+                candidate.mediaUrl ?: candidate.localDownloadPath,
+            )
+        ) {
+            EpisodeMediaType.Audio -> MEDIA_AUDIO
+            EpisodeMediaType.Video -> MEDIA_VIDEO
+            EpisodeMediaType.Image -> MEDIA_IMAGE
         }
         return actualType == requiredType
     }
