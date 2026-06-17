@@ -1,0 +1,772 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "4ff0a05046b912c1424d2dbc1217bf23",
+    "entities": [
+      {
+        "tableName": "feeds",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `legacyRowId` INTEGER, `legacyFeedId` TEXT, `title` TEXT NOT NULL, `feedUrl` TEXT, `imageUrl` TEXT, `localPath` TEXT, `categoryAssignmentRaw` TEXT, `autoDelete` INTEGER NOT NULL, `viewMode` INTEGER NOT NULL, `feedType` INTEGER NOT NULL, `hasUnread` INTEGER NOT NULL, `publishedAt` INTEGER, `serverPublishedAt` INTEGER, `customDownload` INTEGER NOT NULL, `forceUniqueNames` INTEGER NOT NULL, `truncateLongNames` INTEGER NOT NULL, `forceItemSort` INTEGER NOT NULL, `lastItemId` TEXT, `trackSort` INTEGER NOT NULL, `feedPlayer` INTEGER NOT NULL, `username` TEXT, `maxDownloads` INTEGER NOT NULL, `maxSyncedItems` INTEGER NOT NULL, `maxEpisodes` INTEGER NOT NULL, `maxEpisodeAge` INTEGER NOT NULL, `savePlayedPosition` INTEGER NOT NULL, `fingerprintType` INTEGER NOT NULL, `audioSettings` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "legacyRowId",
+            "columnName": "legacyRowId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "legacyFeedId",
+            "columnName": "legacyFeedId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feedUrl",
+            "columnName": "feedUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "localPath",
+            "columnName": "localPath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categoryAssignmentRaw",
+            "columnName": "categoryAssignmentRaw",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "autoDelete",
+            "columnName": "autoDelete",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "viewMode",
+            "columnName": "viewMode",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feedType",
+            "columnName": "feedType",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hasUnread",
+            "columnName": "hasUnread",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publishedAt",
+            "columnName": "publishedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "serverPublishedAt",
+            "columnName": "serverPublishedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "customDownload",
+            "columnName": "customDownload",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "forceUniqueNames",
+            "columnName": "forceUniqueNames",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "truncateLongNames",
+            "columnName": "truncateLongNames",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "forceItemSort",
+            "columnName": "forceItemSort",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastItemId",
+            "columnName": "lastItemId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "trackSort",
+            "columnName": "trackSort",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feedPlayer",
+            "columnName": "feedPlayer",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "username",
+            "columnName": "username",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "maxDownloads",
+            "columnName": "maxDownloads",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxSyncedItems",
+            "columnName": "maxSyncedItems",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxEpisodes",
+            "columnName": "maxEpisodes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxEpisodeAge",
+            "columnName": "maxEpisodeAge",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "savePlayedPosition",
+            "columnName": "savePlayedPosition",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fingerprintType",
+            "columnName": "fingerprintType",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "audioSettings",
+            "columnName": "audioSettings",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_feeds_legacyFeedId",
+            "unique": false,
+            "columnNames": [
+              "legacyFeedId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_feeds_legacyFeedId` ON `${TABLE_NAME}` (`legacyFeedId`)"
+          },
+          {
+            "name": "index_feeds_feedUrl",
+            "unique": false,
+            "columnNames": [
+              "feedUrl"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_feeds_feedUrl` ON `${TABLE_NAME}` (`feedUrl`)"
+          }
+        ]
+      },
+      {
+        "tableName": "episodes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `legacyRowId` INTEGER, `legacyItemId` TEXT, `legacyRssItemId` TEXT, `legacyParentFeedId` TEXT, `feedId` TEXT, `title` TEXT NOT NULL, `mediaUrl` TEXT, `postUrl` TEXT, `localPath` TEXT, `imagePath` TEXT, `mimeType` TEXT, `protocol` TEXT, `durationMs` INTEGER NOT NULL, `positionMs` INTEGER NOT NULL, `publishedAt` INTEGER, `downloadSizeBytes` INTEGER NOT NULL, `downloadPortionRaw` INTEGER NOT NULL, `played` INTEGER NOT NULL, `locked` INTEGER NOT NULL, `description` TEXT, `showNotes` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`feedId`) REFERENCES `feeds`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "legacyRowId",
+            "columnName": "legacyRowId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "legacyItemId",
+            "columnName": "legacyItemId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "legacyRssItemId",
+            "columnName": "legacyRssItemId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "legacyParentFeedId",
+            "columnName": "legacyParentFeedId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "feedId",
+            "columnName": "feedId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mediaUrl",
+            "columnName": "mediaUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "postUrl",
+            "columnName": "postUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "localPath",
+            "columnName": "localPath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "imagePath",
+            "columnName": "imagePath",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "mimeType",
+            "columnName": "mimeType",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "protocol",
+            "columnName": "protocol",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "durationMs",
+            "columnName": "durationMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "positionMs",
+            "columnName": "positionMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publishedAt",
+            "columnName": "publishedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "downloadSizeBytes",
+            "columnName": "downloadSizeBytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "downloadPortionRaw",
+            "columnName": "downloadPortionRaw",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "played",
+            "columnName": "played",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "locked",
+            "columnName": "locked",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "showNotes",
+            "columnName": "showNotes",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_episodes_feedId",
+            "unique": false,
+            "columnNames": [
+              "feedId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_episodes_feedId` ON `${TABLE_NAME}` (`feedId`)"
+          },
+          {
+            "name": "index_episodes_legacyParentFeedId",
+            "unique": false,
+            "columnNames": [
+              "legacyParentFeedId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_episodes_legacyParentFeedId` ON `${TABLE_NAME}` (`legacyParentFeedId`)"
+          },
+          {
+            "name": "index_episodes_mediaUrl",
+            "unique": false,
+            "columnNames": [
+              "mediaUrl"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_episodes_mediaUrl` ON `${TABLE_NAME}` (`mediaUrl`)"
+          },
+          {
+            "name": "index_episodes_publishedAt",
+            "unique": false,
+            "columnNames": [
+              "publishedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_episodes_publishedAt` ON `${TABLE_NAME}` (`publishedAt`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "feeds",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "feedId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "categories",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_categories_name",
+            "unique": true,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_categories_name` ON `${TABLE_NAME}` (`name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "feed_categories",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`feedId` TEXT NOT NULL, `categoryId` TEXT NOT NULL, `slot` INTEGER NOT NULL, PRIMARY KEY(`feedId`, `categoryId`), FOREIGN KEY(`feedId`) REFERENCES `feeds`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "feedId",
+            "columnName": "feedId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryId",
+            "columnName": "categoryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "slot",
+            "columnName": "slot",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "feedId",
+            "categoryId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_feed_categories_categoryId",
+            "unique": false,
+            "columnNames": [
+              "categoryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_feed_categories_categoryId` ON `${TABLE_NAME}` (`categoryId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "feeds",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "feedId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "categories",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "categoryId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "scheduled_updates",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `legacyRowId` INTEGER, `legacyTaskId` TEXT, `active` INTEGER NOT NULL, `minimumBatteryPercent` INTEGER NOT NULL, `startTimeRaw` INTEGER NOT NULL, `recurrencePeriodRaw` INTEGER NOT NULL, `recurrenceIntervalRaw` INTEGER NOT NULL, `operationIdRaw` TEXT, `stateRaw` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "legacyRowId",
+            "columnName": "legacyRowId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "legacyTaskId",
+            "columnName": "legacyTaskId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "minimumBatteryPercent",
+            "columnName": "minimumBatteryPercent",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTimeRaw",
+            "columnName": "startTimeRaw",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recurrencePeriodRaw",
+            "columnName": "recurrencePeriodRaw",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recurrenceIntervalRaw",
+            "columnName": "recurrenceIntervalRaw",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operationIdRaw",
+            "columnName": "operationIdRaw",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "stateRaw",
+            "columnName": "stateRaw",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "smart_playlists",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `legacyRowId` INTEGER, `legacyPlaylistId` INTEGER, `name` TEXT NOT NULL, `legacyFeedId` TEXT, `sortOrderRaw` INTEGER NOT NULL, `categoryIdRaw` TEXT, `episodeCount` INTEGER NOT NULL, `episodeFilterRaw` INTEGER NOT NULL, `playbackTypeRaw` INTEGER NOT NULL, `configRaw` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "legacyRowId",
+            "columnName": "legacyRowId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "legacyPlaylistId",
+            "columnName": "legacyPlaylistId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "legacyFeedId",
+            "columnName": "legacyFeedId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sortOrderRaw",
+            "columnName": "sortOrderRaw",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryIdRaw",
+            "columnName": "categoryIdRaw",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "episodeCount",
+            "columnName": "episodeCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "episodeFilterRaw",
+            "columnName": "episodeFilterRaw",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playbackTypeRaw",
+            "columnName": "playbackTypeRaw",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "configRaw",
+            "columnName": "configRaw",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "episode_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `legacyRowId` INTEGER, `episodeUrl` TEXT, `feedUrl` TEXT, `timestamp` INTEGER NOT NULL, `entryTypeRaw` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "legacyRowId",
+            "columnName": "legacyRowId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "episodeUrl",
+            "columnName": "episodeUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "feedUrl",
+            "columnName": "feedUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entryTypeRaw",
+            "columnName": "entryTypeRaw",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_episode_history_episodeUrl",
+            "unique": false,
+            "columnNames": [
+              "episodeUrl"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_episode_history_episodeUrl` ON `${TABLE_NAME}` (`episodeUrl`)"
+          },
+          {
+            "name": "index_episode_history_feedUrl",
+            "unique": false,
+            "columnNames": [
+              "feedUrl"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_episode_history_feedUrl` ON `${TABLE_NAME}` (`feedUrl`)"
+          }
+        ]
+      },
+      {
+        "tableName": "migration_runs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `sourceName` TEXT NOT NULL, `sourceUri` TEXT NOT NULL, `startedAt` INTEGER NOT NULL, `completedAt` INTEGER, `status` TEXT NOT NULL, `feedCount` INTEGER NOT NULL, `episodeCount` INTEGER NOT NULL, `categoryCount` INTEGER NOT NULL, `message` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceName",
+            "columnName": "sourceName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceUri",
+            "columnName": "sourceUri",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "startedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completedAt",
+            "columnName": "completedAt",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feedCount",
+            "columnName": "feedCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "episodeCount",
+            "columnName": "episodeCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryCount",
+            "columnName": "categoryCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4ff0a05046b912c1424d2dbc1217bf23')"
+    ]
+  }
+}

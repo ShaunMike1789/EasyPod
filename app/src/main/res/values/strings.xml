@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">EasyPod</string>
+    <string name="playback_widget_name">EasyPod Player</string>
+    <string name="playback_widget_description">Control the current podcast from your home screen.</string>
+    <string name="episodes_widget_name">EasyPod Up Next</string>
+    <string name="episodes_widget_description">See and play recent unplayed podcast episodes.</string>
+</resources>
