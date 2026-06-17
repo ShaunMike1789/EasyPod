@@ -291,7 +291,9 @@ internal fun normalizePodcastFeedUrl(rawUrl: String): String {
     val url = requireNotNull(candidate.toHttpUrlOrNull()) {
         "Enter a valid podcast feed URL"
     }
-    require(url.isHttps) { "Podcast feeds must use HTTPS" }
+    require(url.scheme == "https" || url.scheme == "http") {
+        "Podcast feeds must use HTTP or HTTPS"
+    }
     require(url.username.isEmpty() && url.password.isEmpty()) {
         "Podcast feed URLs cannot contain credentials"
     }

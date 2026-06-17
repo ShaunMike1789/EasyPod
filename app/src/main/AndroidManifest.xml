@@ -17,7 +17,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@drawable/ic_easypod"
         android:label="@string/app_name"
-        android:usesCleartextTraffic="false"
+        android:usesCleartextTraffic="true"
         android:roundIcon="@drawable/ic_easypod"
         android:supportsRtl="true"
         android:theme="@style/Theme.EasyPod">

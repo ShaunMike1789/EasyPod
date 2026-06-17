@@ -14,10 +14,15 @@ class FeedUrlValidationTest {
     }
 
     @Test
-    fun rejectsCleartextAndEmbeddedCredentials() {
-        assertThrows(IllegalArgumentException::class.java) {
-            normalizePodcastFeedUrl("http://example.com/feed.xml")
-        }
+    fun acceptsHttpFeedUrlsForLegacyPodcastCompatibility() {
+        assertEquals(
+            "http://example.com/feed.xml",
+            normalizePodcastFeedUrl("http://example.com/feed.xml"),
+        )
+    }
+
+    @Test
+    fun rejectsEmbeddedCredentials() {
         assertThrows(IllegalArgumentException::class.java) {
             normalizePodcastFeedUrl("https://user:secret@example.com/feed.xml")
         }
