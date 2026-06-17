@@ -302,6 +302,8 @@ class EasyPodRepository(private val database: EasyPodDatabase) {
         }
     }
 
+    suspend fun firstSmartPlaylistId(): Long? = smartPlayDao.firstPlaylistId()
+
     suspend fun createSmartPlaylist(
         name: String,
         feedId: String?,

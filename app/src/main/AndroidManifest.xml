@@ -150,6 +150,31 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".automation.ExternalCommandReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="com.smgray.easypod.command.UPDATE_SMART_PLAY" />
+                <action android:name="com.smgray.easypod.command.START_SMART_PLAY" />
+                <action android:name="com.smgray.easypod.command.PLAY" />
+                <action android:name="com.smgray.easypod.command.PAUSE" />
+                <action android:name="com.smgray.easypod.command.PLAY_PAUSE" />
+                <action android:name="com.smgray.easypod.command.PLAY_NEXT" />
+                <action android:name="com.smgray.easypod.command.PLAY_PREVIOUS" />
+                <action android:name="com.smgray.easypod.command.SKIP_FORWARD" />
+                <action android:name="com.smgray.easypod.command.SKIP_BACKWARD" />
+                <action android:name="com.smgray.easypod.command.SKIP_TO_END" />
+                <action android:name="com.smgray.easypod.command.SET_PLAYBACK_SPEED" />
+                <action android:name="com.smgray.easypod.command.SET_PLAYBACK_SPEED_NORMAL" />
+                <action android:name="com.smgray.easypod.command.SET_PLAYBACK_SPEED_1" />
+                <action android:name="com.smgray.easypod.command.SET_PLAYBACK_SPEED_2" />
+                <action android:name="com.smgray.easypod.command.START_SYNC" />
+            </intent-filter>
+        </receiver>
+
         <receiver android:name="androidx.mediarouter.media.MediaTransferReceiver" />
     </application>
 

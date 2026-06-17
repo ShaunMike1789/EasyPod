@@ -166,6 +166,14 @@ class PlaybackConnection(context: Context) : Player.Listener {
         }
     }
 
+    fun play() {
+        controller?.play()
+    }
+
+    fun pause() {
+        controller?.pause()
+    }
+
     fun skipNext() {
         controller?.let {
             if (it.hasNextMediaItem()) it.seekToNextMediaItem()
@@ -193,6 +201,13 @@ class PlaybackConnection(context: Context) : Player.Listener {
 
     fun seekTo(positionMs: Long) {
         controller?.seekTo(positionMs.coerceAtLeast(0L))
+    }
+
+    fun seekToEnd() {
+        controller?.let {
+            val duration = it.duration.takeIf { value -> value > 0 } ?: return
+            it.seekTo(duration)
+        }
     }
 
     fun setPlaybackSpeed(speed: Float) {

@@ -698,6 +698,17 @@ interface SmartPlayDao {
     )
     suspend fun deletePlaylist(playlistId: Long)
 
+    @Query(
+        """
+        SELECT COALESCE(legacyPlaylistId, legacyRowId, 1)
+        FROM smart_playlists
+        GROUP BY COALESCE(legacyPlaylistId, legacyRowId, 1)
+        ORDER BY COALESCE(legacyPlaylistId, legacyRowId, 1)
+        LIMIT 1
+        """,
+    )
+    suspend fun firstPlaylistId(): Long?
+
     @Query("SELECT COALESCE(MAX(legacyPlaylistId), 0) + 1 FROM smart_playlists")
     suspend fun nextPlaylistId(): Long
 }
