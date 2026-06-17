@@ -44,7 +44,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -102,7 +101,9 @@ import com.smgray.easypod.sync.SyncResolution
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import java.text.DateFormat
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 private enum class EasyPodSection(val label: String) {
     Episodes("Episodes"),
@@ -124,6 +125,31 @@ private enum class EpisodeFilter(val label: String) {
     Video("Video"),
 }
 
+private enum class ClassicFeedSort(val label: String) {
+    Latest("Latest"),
+    Oldest("Oldest"),
+    Name("Name"),
+    NameDescending("Name (Z-A)"),
+    Duration("Duration"),
+    DurationDescending("Duration (Desc)"),
+    PlayedPortion("Played Portion"),
+    FileName("File Name"),
+}
+
+private enum class ClassicFeedFilter(val label: String) {
+    MyEpisodes("MY EPISODES"),
+    AllPublished("ALL PUBLISHED"),
+    Downloaded("DOWNLOADED"),
+    Unplayed("UNPLAYED"),
+    Played("PLAYED"),
+}
+
+private enum class FeedMenuPane {
+    Main,
+    Sort,
+    Filter,
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
@@ -137,6 +163,15 @@ fun EasyPodApp(
     val scope = rememberCoroutineScope()
     var section by remember { mutableStateOf(EasyPodSection.Episodes) }
     var selectedFeedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var classicFeedSort by rememberSaveable { mutableStateOf(ClassicFeedSort.Latest) }
+    var classicFeedFilter by rememberSaveable {
+        mutableStateOf(ClassicFeedFilter.MyEpisodes)
+    }
+    var classicCompactCards by rememberSaveable { mutableStateOf(true) }
+    var playVideosAsAudio by rememberSaveable { mutableStateOf(false) }
+    var feedSearchVisible by rememberSaveable { mutableStateOf(false) }
+    var feedMenuOpen by remember { mutableStateOf(false) }
+    var feedMenuPane by remember { mutableStateOf(FeedMenuPane.Main) }
     var showAddFeedDialog by remember { mutableStateOf(false) }
     var showSleepDialog by remember { mutableStateOf(false) }
     var showNowPlaying by remember { mutableStateOf(false) }
@@ -151,9 +186,7 @@ fun EasyPodApp(
             selectedFeedId = null
         }
     }
-    val selectedFeedTitle = state.library.feeds
-        .firstOrNull { it.id == selectedFeedId }
-        ?.title
+    val selectedFeed = state.library.feeds.firstOrNull { it.id == selectedFeedId }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
     ) {
@@ -243,14 +276,85 @@ fun EasyPodApp(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(section.label) },
+                    title = {
+                        if (selectedFeed != null && section == EasyPodSection.Episodes) {
+                            Column {
+                                Text(
+                                    selectedFeed.title,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    "${classicFeedFilter.label} ▼",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        } else {
+                            Text(section.label)
+                        }
+                    },
                     navigationIcon = {
                         TextButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Text("Menu")
+                            Text("☰")
                         }
                     },
                     actions = {
-                        MediaRouteButton()
+                        if (selectedFeed != null && section == EasyPodSection.Episodes) {
+                            Text(
+                                "☷ ${selectedFeed.episodeCount}",
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Box {
+                                TextButton(
+                                    onClick = {
+                                        feedMenuPane = FeedMenuPane.Main
+                                        feedMenuOpen = true
+                                    },
+                                ) {
+                                    Text("⋮")
+                                }
+                                ClassicFeedMenu(
+                                    expanded = feedMenuOpen,
+                                    pane = feedMenuPane,
+                                    sort = classicFeedSort,
+                                    filter = classicFeedFilter,
+                                    compactCards = classicCompactCards,
+                                    playVideosAsAudio = playVideosAsAudio,
+                                    onDismiss = { feedMenuOpen = false },
+                                    onPane = { feedMenuPane = it },
+                                    onUpdate = {
+                                        feedMenuOpen = false
+                                        selectedFeed.feedUrl?.let(viewModel::refreshFeed)
+                                    },
+                                    onSearch = {
+                                        feedMenuOpen = false
+                                        feedSearchVisible = true
+                                    },
+                                    onEdit = {
+                                        feedMenuOpen = false
+                                        section = EasyPodSection.Feeds
+                                    },
+                                    onSort = {
+                                        classicFeedSort = it
+                                        feedMenuOpen = false
+                                    },
+                                    onFilter = {
+                                        classicFeedFilter = it
+                                        feedMenuOpen = false
+                                    },
+                                    onToggleCompactCards = {
+                                        classicCompactCards = !classicCompactCards
+                                    },
+                                    onTogglePlayVideosAsAudio = {
+                                        playVideosAsAudio = !playVideosAsAudio
+                                    },
+                                )
+                            }
+                        } else {
+                            MediaRouteButton()
+                        }
                     },
                 )
             },
@@ -277,9 +381,12 @@ fun EasyPodApp(
             when (section) {
                 EasyPodSection.Episodes -> EpisodesPage(
                     state = state,
-                    selectedFeedId = selectedFeedId,
-                    selectedFeedTitle = selectedFeedTitle,
+                    selectedFeed = selectedFeed,
                     externalSearchQuery = externalEpisodeSearchQuery,
+                    classicFeedSort = classicFeedSort,
+                    classicFeedFilter = classicFeedFilter,
+                    classicCompactCards = classicCompactCards,
+                    feedSearchVisible = feedSearchVisible,
                     onExternalSearchConsumed = onExternalEpisodeSearchConsumed,
                     onImport = {
                         importer.launch(
@@ -829,9 +936,12 @@ private fun DrawerActionRow(
 @Composable
 private fun EpisodesPage(
     state: MainUiState,
-    selectedFeedId: String?,
-    selectedFeedTitle: String?,
+    selectedFeed: FeedSummary?,
     externalSearchQuery: String?,
+    classicFeedSort: ClassicFeedSort,
+    classicFeedFilter: ClassicFeedFilter,
+    classicCompactCards: Boolean,
+    feedSearchVisible: Boolean,
     onExternalSearchConsumed: () -> Unit,
     onImport: () -> Unit,
     onDismissImportMessage: () -> Unit,
@@ -852,78 +962,125 @@ private fun EpisodesPage(
         }
     }
     val filteredEpisodes = state.library.episodes.filter { episode ->
-        val matchesFeed = selectedFeedId == null || episode.feedId == selectedFeedId
+        val matchesFeed = selectedFeed == null || episode.feedId == selectedFeed.id
         val matchesQuery = query.isBlank() ||
             episode.title.contains(query, ignoreCase = true) ||
             episode.feedTitle?.contains(query, ignoreCase = true) == true
-        val matchesFilter = when (filter) {
-            EpisodeFilter.All -> true
-            EpisodeFilter.Unplayed -> !episode.played
-            EpisodeFilter.Queued -> episode.inQueue
-            EpisodeFilter.Downloaded -> episode.localDownloadPath != null
-            EpisodeFilter.Locked -> episode.locked
-            EpisodeFilter.Audio ->
-                EpisodeMediaClassifier.classify(
-                    episode.mimeType,
-                    episode.mediaUrl ?: episode.localDownloadPath,
-                ) == EpisodeMediaType.Audio
+        val matchesFilter = if (selectedFeed == null) {
+            when (filter) {
+                EpisodeFilter.All -> true
+                EpisodeFilter.Unplayed -> !episode.played
+                EpisodeFilter.Queued -> episode.inQueue
+                EpisodeFilter.Downloaded -> episode.localDownloadPath != null
+                EpisodeFilter.Locked -> episode.locked
+                EpisodeFilter.Audio ->
+                    EpisodeMediaClassifier.classify(
+                        episode.mimeType,
+                        episode.mediaUrl ?: episode.localDownloadPath,
+                    ) == EpisodeMediaType.Audio
 
-            EpisodeFilter.Video ->
-                EpisodeMediaClassifier.classify(
-                    episode.mimeType,
-                    episode.mediaUrl ?: episode.localDownloadPath,
-                ) == EpisodeMediaType.Video
-        }
-        matchesFeed && matchesQuery && matchesFilter
-    }
+                EpisodeFilter.Video ->
+                    EpisodeMediaClassifier.classify(
+                        episode.mimeType,
+                        episode.mediaUrl ?: episode.localDownloadPath,
+                    ) == EpisodeMediaType.Video
+            }
+        } else {
+            when (classicFeedFilter) {
+                ClassicFeedFilter.MyEpisodes -> !episode.played ||
+                    episode.positionMs > 0 ||
+                    episode.localDownloadPath != null ||
+                    episode.inQueue
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                StatCard("Feeds", state.library.feedCount, Modifier.weight(1f))
-                StatCard("Episodes", state.library.episodeCount, Modifier.weight(1f))
-                StatCard("Unplayed", state.library.unplayedCount, Modifier.weight(1f))
+                ClassicFeedFilter.AllPublished -> true
+                ClassicFeedFilter.Downloaded -> episode.localDownloadPath != null
+                ClassicFeedFilter.Unplayed -> !episode.played
+                ClassicFeedFilter.Played -> episode.played
             }
         }
+        matchesFeed && matchesQuery && matchesFilter
+    }.sortedWith(classicEpisodeComparator(classicFeedSort))
 
-        item {
-            MigrationCard(
-                importState = state.importState,
-                hasLibrary = state.library.feedCount > 0,
-                onImport = onImport,
-                onDismiss = onDismissImportMessage,
-            )
-        }
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .background(if (selectedFeed == null) Color.Transparent else Color(0xFFEDEDED)),
+        contentPadding = if (selectedFeed == null) {
+            PaddingValues(20.dp)
+        } else {
+            PaddingValues(start = 8.dp, end = 8.dp, bottom = 20.dp)
+        },
+        verticalArrangement = if (selectedFeed == null) {
+            Arrangement.spacedBy(16.dp)
+        } else {
+            Arrangement.spacedBy(if (classicCompactCards) 0.dp else 8.dp)
+        },
+    ) {
+        if (selectedFeed == null) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    StatCard("Feeds", state.library.feedCount, Modifier.weight(1f))
+                    StatCard("Episodes", state.library.episodeCount, Modifier.weight(1f))
+                    StatCard("Unplayed", state.library.unplayedCount, Modifier.weight(1f))
+                }
+            }
 
-        item {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                label = { Text("Search episodes") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+            item {
+                MigrationCard(
+                    importState = state.importState,
+                    hasLibrary = state.library.feedCount > 0,
+                    onImport = onImport,
+                    onDismiss = onDismissImportMessage,
+                )
+            }
 
-        item {
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                EpisodeFilter.entries.forEach { option ->
-                    FilterChip(
-                        selected = filter == option,
-                        onClick = { filter = option },
-                        label = { Text(option.label) },
+            item {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text("Search episodes") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    EpisodeFilter.entries.forEach { option ->
+                        FilterChip(
+                            selected = filter == option,
+                            onClick = { filter = option },
+                            label = { Text(option.label) },
+                        )
+                    }
+                }
+            }
+        } else {
+            if (feedSearchVisible) {
+                item {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        label = { Text("Search ${selectedFeed.title}") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
                     )
                 }
+            }
+            item {
+                ClassicFeedHeader(
+                    feed = selectedFeed,
+                    filter = classicFeedFilter,
+                    episodeCount = filteredEpisodes.size,
+                )
             }
         }
 
@@ -932,12 +1089,14 @@ private fun EpisodesPage(
                 EmptyLibraryCard()
             }
         } else {
-            item {
-                Text(
-                    selectedFeedTitle ?: "Recent episodes",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
+            if (selectedFeed == null) {
+                item {
+                    Text(
+                        "Recent episodes",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
             if (filteredEpisodes.isEmpty()) {
                 item {
@@ -948,13 +1107,33 @@ private fun EpisodesPage(
                 }
             }
             items(filteredEpisodes, key = { it.id }) { episode ->
-                EpisodeRow(
-                    episode = episode,
-                    onPlay = { onPlayEpisode(episode) },
-                    onToggleQueue = { onToggleQueue(episode) },
-                    onToggleDownload = { onToggleDownload(episode) },
-                    onInfo = { selectedEpisodeId = episode.id },
-                )
+                if (selectedFeed != null && classicCompactCards) {
+                    ClassicCompactEpisodeRow(
+                        episode = episode,
+                        feed = selectedFeed,
+                        onPlay = { onPlayEpisode(episode) },
+                        onQueue = { onToggleQueue(episode) },
+                        onDownload = { onToggleDownload(episode) },
+                        onInfo = { selectedEpisodeId = episode.id },
+                    )
+                } else if (selectedFeed != null) {
+                    ClassicPublishedEpisodeCard(
+                        episode = episode,
+                        feed = selectedFeed,
+                        onPlay = { onPlayEpisode(episode) },
+                        onQueue = { onToggleQueue(episode) },
+                        onDownload = { onToggleDownload(episode) },
+                        onInfo = { selectedEpisodeId = episode.id },
+                    )
+                } else {
+                    EpisodeRow(
+                        episode = episode,
+                        onPlay = { onPlayEpisode(episode) },
+                        onToggleQueue = { onToggleQueue(episode) },
+                        onToggleDownload = { onToggleDownload(episode) },
+                        onInfo = { selectedEpisodeId = episode.id },
+                    )
+                }
             }
         }
     }
@@ -974,6 +1153,278 @@ private fun EpisodesPage(
                 onSetLocked = { onSetLocked(episode.id, it) },
             )
         }
+}
+
+@Composable
+private fun ClassicFeedMenu(
+    expanded: Boolean,
+    pane: FeedMenuPane,
+    sort: ClassicFeedSort,
+    filter: ClassicFeedFilter,
+    compactCards: Boolean,
+    playVideosAsAudio: Boolean,
+    onDismiss: () -> Unit,
+    onPane: (FeedMenuPane) -> Unit,
+    onUpdate: () -> Unit,
+    onSearch: () -> Unit,
+    onEdit: () -> Unit,
+    onSort: (ClassicFeedSort) -> Unit,
+    onFilter: (ClassicFeedFilter) -> Unit,
+    onToggleCompactCards: () -> Unit,
+    onTogglePlayVideosAsAudio: () -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismiss,
+    ) {
+        when (pane) {
+            FeedMenuPane.Main -> {
+                DropdownMenuItem(text = { Text("Update Feed") }, onClick = onUpdate)
+                DropdownMenuItem(
+                    text = {
+                        Row(Modifier.fillMaxWidth()) {
+                            Text("Sort", modifier = Modifier.weight(1f))
+                            Text("›")
+                        }
+                    },
+                    onClick = { onPane(FeedMenuPane.Sort) },
+                )
+                DropdownMenuItem(
+                    text = {
+                        Row(Modifier.fillMaxWidth()) {
+                            Text("Filter", modifier = Modifier.weight(1f))
+                            Text("›")
+                        }
+                    },
+                    onClick = { onPane(FeedMenuPane.Filter) },
+                )
+                DropdownMenuItem(text = { Text("Edit Feed") }, onClick = onEdit)
+                DropdownMenuItem(text = { Text("Search") }, onClick = onSearch)
+                DropdownMenuItem(
+                    text = {
+                        CheckedMenuText("Compact Cards", compactCards)
+                    },
+                    onClick = onToggleCompactCards,
+                )
+                DropdownMenuItem(
+                    text = {
+                        CheckedMenuText("Play Videos as Audio", playVideosAsAudio)
+                    },
+                    onClick = onTogglePlayVideosAsAudio,
+                )
+            }
+
+            FeedMenuPane.Sort -> {
+                DropdownMenuItem(
+                    text = { Text("Sort", color = Color(0xFF777777)) },
+                    onClick = { onPane(FeedMenuPane.Main) },
+                )
+                ClassicFeedSort.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { CheckedMenuText(option.label, sort == option) },
+                        onClick = { onSort(option) },
+                    )
+                }
+            }
+
+            FeedMenuPane.Filter -> {
+                DropdownMenuItem(
+                    text = { Text("Filter", color = Color(0xFF777777)) },
+                    onClick = { onPane(FeedMenuPane.Main) },
+                )
+                ClassicFeedFilter.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { CheckedMenuText(option.label, filter == option) },
+                        onClick = { onFilter(option) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CheckedMenuText(label: String, checked: Boolean) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, modifier = Modifier.weight(1f))
+        Text(
+            if (checked) "☑" else "☐",
+            color = if (checked) Color(0xFFD66545) else Color(0xFF777777),
+            style = MaterialTheme.typography.titleMedium,
+        )
+    }
+}
+
+@Composable
+private fun ClassicFeedHeader(
+    feed: FeedSummary,
+    filter: ClassicFeedFilter,
+    episodeCount: Int,
+) {
+    val allPublished = filter == ClassicFeedFilter.AllPublished
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (allPublished) Color(0xFF6E170F) else Color.White)
+            .padding(start = 10.dp, end = 10.dp, top = 18.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "=${feed.title.uppercase()}",
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (allPublished) Color.White else Color(0xFF6A6A6A),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Light,
+            )
+            Text(
+                "$episodeCount episodes",
+                color = if (allPublished) Color(0xFFE0E0E0) else Color(0xFF8E8E8E),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 6.dp),
+            thickness = 3.dp,
+            color = Color(0xFFFF8A65),
+        )
+    }
+}
+
+@Composable
+private fun ClassicCompactEpisodeRow(
+    episode: EpisodeSummary,
+    feed: FeedSummary,
+    onPlay: () -> Unit,
+    onQueue: () -> Unit,
+    onDownload: () -> Unit,
+    onInfo: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .clickable(onClick = onInfo)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ClassicEpisodeArt(feed)
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                episode.title,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.titleMedium,
+                color = Color(0xFF3F3F3F),
+            )
+            Text(
+                classicEpisodeMeta(episode),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF8A8A8A),
+            )
+        }
+        TextButton(onClick = onPlay, enabled = !episode.mediaUrl.isNullOrBlank()) {
+            Text("▶", color = Color(0xFF8A8A8A))
+        }
+        TextButton(onClick = onQueue) { Text("≡+") }
+        TextButton(onClick = onInfo) { Text("⋮", color = Color(0xFF9E9E9E)) }
+    }
+    HorizontalDivider(color = Color(0xFFE0E0E0))
+}
+
+@Composable
+private fun ClassicPublishedEpisodeCard(
+    episode: EpisodeSummary,
+    feed: FeedSummary,
+    onPlay: () -> Unit,
+    onQueue: () -> Unit,
+    onDownload: () -> Unit,
+    onInfo: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onInfo),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(verticalAlignment = Alignment.Top) {
+                ClassicEpisodeArt(feed, small = true)
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        formatClassicDate(episode.publishedAt),
+                        color = Color(0xFF8A8A8A),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    Text(
+                        episode.title,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+            }
+            val description = episode.showNotes
+                ?.takeIf(String::isNotBlank)
+                ?: episode.description?.takeIf(String::isNotBlank)
+            description?.let {
+                Text(
+                    plainEpisodeText(it),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    color = Color(0xFF6A6A6A),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onPlay, enabled = !episode.mediaUrl.isNullOrBlank()) {
+                    Text("▶", color = Color(0xFF8A8A8A))
+                }
+                if (episode.downloadState == DownloadState.COMPLETE) {
+                    Text("Offline", color = Color(0xFF8A8A8A))
+                } else {
+                    TextButton(onClick = onDownload, enabled = !episode.mediaUrl.isNullOrBlank()) {
+                        Text("↓ DOWNLOAD", color = Color(0xFF6A6A6A))
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = onQueue) { Text("≡+") }
+                TextButton(onClick = onInfo) { Text("⋮", color = Color(0xFF9E9E9E)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClassicEpisodeArt(feed: FeedSummary, small: Boolean = false) {
+    val size = if (small) 68.dp else 88.dp
+    Box(
+        modifier = Modifier
+            .size(size)
+            .background(
+                if (feed.imageUrl.isNullOrBlank()) Color(0xFFFFC928) else Color(0xFFEEEEEE),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            feed.title.trim().take(1).uppercase().ifBlank { "=" },
+            color = Color(0xFF555555),
+            style = if (small) {
+                MaterialTheme.typography.titleMedium
+            } else {
+                MaterialTheme.typography.headlineSmall
+            },
+            fontWeight = FontWeight.Bold,
+        )
+    }
 }
 
 @Composable
@@ -3200,6 +3651,69 @@ private fun formatDuration(milliseconds: Long): String {
     }
 }
 
+private fun classicEpisodeComparator(
+    sort: ClassicFeedSort,
+): Comparator<EpisodeSummary> = when (sort) {
+    ClassicFeedSort.Latest -> compareByDescending<EpisodeSummary> {
+        it.publishedAt ?: Long.MIN_VALUE
+    }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.title }
+
+    ClassicFeedSort.Oldest -> compareBy<EpisodeSummary> {
+        it.publishedAt ?: Long.MAX_VALUE
+    }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.title }
+
+    ClassicFeedSort.Name -> compareBy(String.CASE_INSENSITIVE_ORDER) { it.title }
+    ClassicFeedSort.NameDescending ->
+        compareByDescending<EpisodeSummary> { it.title.lowercase() }
+
+    ClassicFeedSort.Duration -> compareBy<EpisodeSummary> { it.durationMs }
+        .thenBy(String.CASE_INSENSITIVE_ORDER) { it.title }
+
+    ClassicFeedSort.DurationDescending -> compareByDescending<EpisodeSummary> {
+        it.durationMs
+    }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.title }
+
+    ClassicFeedSort.PlayedPortion -> compareByDescending {
+        playedPortion(it)
+    }
+
+    ClassicFeedSort.FileName -> compareBy(String.CASE_INSENSITIVE_ORDER) {
+        it.mediaUrl
+            ?.substringBefore('?')
+            ?.substringAfterLast('/')
+            ?: it.title
+    }
+}
+
+private fun playedPortion(episode: EpisodeSummary): Double =
+    if (episode.durationMs > 0L) {
+        episode.positionMs.toDouble() / episode.durationMs.toDouble()
+    } else {
+        0.0
+    }
+
+private fun classicEpisodeMeta(episode: EpisodeSummary): String {
+    val date = formatClassicDate(episode.publishedAt)
+    val duration = when {
+        episode.durationMs <= 0L -> null
+        episode.positionMs in 1 until episode.durationMs ->
+            "${formatMinutes(episode.durationMs - episode.positionMs)} left"
+
+        else -> formatMinutes(episode.durationMs)
+    }
+    return listOfNotNull(date, duration).joinToString(" • ")
+}
+
+private fun formatClassicDate(timestamp: Long?): String =
+    timestamp
+        ?.let { CLASSIC_DATE_FORMAT.format(Date(it)).uppercase() }
+        ?: "UNKNOWN"
+
+private fun formatMinutes(milliseconds: Long): String {
+    val minutes = (milliseconds / 60_000L).coerceAtLeast(1L)
+    return "$minutes min"
+}
+
 private fun formatHistoryTimestamp(timestamp: Long): String =
     if (timestamp <= 0L) {
         "Imported history"
@@ -3232,3 +3746,5 @@ private fun FeedSummary.categoryIdSet(): Set<String> =
         .map(String::trim)
         .filter(String::isNotEmpty)
         .toSet()
+
+private val CLASSIC_DATE_FORMAT = SimpleDateFormat("MMM d", Locale.US)
