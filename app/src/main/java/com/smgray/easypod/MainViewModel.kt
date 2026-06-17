@@ -307,6 +307,13 @@ class MainViewModel(
         }
     }
 
+    fun playHistoryEpisode(episodeId: String) {
+        viewModelScope.launch {
+            val queue = repository.enqueueEpisode(episodeId)
+            playbackConnection.playQueue(queue, episodeId)
+        }
+    }
+
     fun addToQueue(episodeId: String) {
         viewModelScope.launch {
             playbackConnection.syncQueue(repository.enqueueEpisode(episodeId))

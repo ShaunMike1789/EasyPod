@@ -30,6 +30,40 @@ interface LibraryDao {
     @Upsert
     suspend fun putEpisodeHistory(history: List<EpisodeHistoryEntity>)
 
+    @Query(
+        """
+        SELECT episode_history.id AS id,
+               episodes.id AS episodeId,
+               COALESCE(episodes.title, episode_history.episodeUrl, 'Unknown episode') AS title,
+               COALESCE(
+                   (
+                       SELECT feeds.title
+                       FROM feeds
+                       WHERE feeds.id = episodes.feedId
+                       LIMIT 1
+                   ),
+                   (
+                       SELECT feeds.title
+                       FROM feeds
+                       WHERE feeds.feedUrl = episode_history.feedUrl
+                       LIMIT 1
+                   )
+               ) AS feedTitle,
+               episode_history.episodeUrl AS episodeUrl,
+               episode_history.feedUrl AS feedUrl,
+               episode_history.timestamp AS timestamp,
+               episode_history.entryTypeRaw AS entryTypeRaw
+        FROM episode_history
+        LEFT JOIN episodes
+          ON episodes.id = episode_history.episodeUrl
+          OR episodes.mediaUrl = episode_history.episodeUrl
+          OR episodes.localPath = episode_history.episodeUrl
+        ORDER BY episode_history.timestamp DESC
+        LIMIT :limit
+        """,
+    )
+    fun observePlayedHistory(limit: Int): Flow<List<PlayedHistorySummary>>
+
     @Query("SELECT * FROM feeds WHERE feedUrl = :url LIMIT 1")
     suspend fun findFeedByUrl(url: String): FeedEntity?
 

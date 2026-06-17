@@ -17,6 +17,7 @@ data class LibrarySnapshot(
     val episodes: List<EpisodeSummary> = emptyList(),
     val queue: List<QueueEpisodeSummary> = emptyList(),
     val downloads: List<DownloadSummary> = emptyList(),
+    val playedHistory: List<PlayedHistorySummary> = emptyList(),
     val automation: AutomationSettingsEntity = AutomationSettingsEntity(),
     val smartPlaylists: List<SmartPlaylistSummary> = emptyList(),
     val smartPlayRules: List<SmartPlayRuleSummary> = emptyList(),
@@ -61,19 +62,26 @@ class EasyPodRepository(private val database: EasyPodDatabase) {
         )
     }
 
-    private val libraryContent: Flow<LibrarySnapshot> = combine(
+    private val libraryContentWithoutMigration: Flow<LibrarySnapshot> = combine(
         libraryCounts,
         libraryDao.observeFeedSummaries(limit = 100),
         libraryDao.observeEpisodeSummaries(limit = 100),
         libraryDao.observeCategories(),
-        migrationDao.observeLatestRun(),
-    ) { counts, feeds, episodes, categories, latestMigration ->
+        libraryDao.observePlayedHistory(limit = 100),
+    ) { counts, feeds, episodes, categories, playedHistory ->
         counts.copy(
             feeds = feeds,
             episodes = episodes,
             categories = categories,
-            latestMigration = latestMigration,
+            playedHistory = playedHistory,
         )
+    }
+
+    private val libraryContent: Flow<LibrarySnapshot> = combine(
+        libraryContentWithoutMigration,
+        migrationDao.observeLatestRun(),
+    ) { library, latestMigration ->
+        library.copy(latestMigration = latestMigration)
     }
 
     private val queueAndDownloads = combine(

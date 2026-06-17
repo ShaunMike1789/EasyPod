@@ -332,6 +332,17 @@ data class DownloadSummary(
     val errorMessage: String?,
 )
 
+data class PlayedHistorySummary(
+    val id: String,
+    val episodeId: String?,
+    val title: String,
+    val feedTitle: String?,
+    val episodeUrl: String?,
+    val feedUrl: String?,
+    val timestamp: Long,
+    val entryTypeRaw: Int,
+)
+
 data class EpisodeDownloadSource(
     val episodeId: String,
     val title: String,

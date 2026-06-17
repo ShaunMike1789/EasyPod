@@ -78,6 +78,7 @@ import com.smgray.easypod.SyncActionState
 import com.smgray.easypod.data.DownloadSummary
 import com.smgray.easypod.data.EpisodeSummary
 import com.smgray.easypod.data.QueueEpisodeSummary
+import com.smgray.easypod.data.PlayedHistorySummary
 import com.smgray.easypod.data.FeedSummary
 import com.smgray.easypod.data.CategorySummary
 import com.smgray.easypod.data.SmartPlaylistSummary
@@ -95,6 +96,7 @@ import java.util.Date
 
 private enum class EasyPodSection(val label: String) {
     Episodes("Episodes"),
+    History("History"),
     Feeds("Feeds"),
     Playlist("Playlist"),
     SmartPlay("SmartPlay"),
@@ -296,6 +298,13 @@ fun EasyPodApp(
                     onCreateCategory = viewModel::createCategory,
                     onSetFeedCategory = viewModel::setFeedCategory,
                     onDeleteCategory = viewModel::deleteCategory,
+                    modifier = Modifier.padding(padding),
+                )
+
+                EasyPodSection.History -> HistoryPage(
+                    history = state.library.playedHistory,
+                    onPlay = viewModel::playHistoryEpisode,
+                    onQueue = viewModel::addToQueue,
                     modifier = Modifier.padding(padding),
                 )
 
@@ -1321,6 +1330,99 @@ private fun PodcastDirectoryResultRow(
                 maxLines = 1,
             )
         }
+    }
+}
+
+@Composable
+private fun HistoryPage(
+    history: List<PlayedHistorySummary>,
+    onPlay: (String) -> Unit,
+    onQueue: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Text(
+                "${history.size} recent history entries",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        if (history.isEmpty()) {
+            item {
+                Card {
+                    Column(
+                        Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            "No playback history yet",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            "Played episodes and imported legacy history will appear here.",
+                        )
+                    }
+                }
+            }
+        } else {
+            items(history, key = { it.id }) { entry ->
+                HistoryRow(
+                    entry = entry,
+                    onPlay = { entry.episodeId?.let(onPlay) },
+                    onQueue = { entry.episodeId?.let(onQueue) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HistoryRow(
+    entry: PlayedHistorySummary,
+    onPlay: () -> Unit,
+    onQueue: () -> Unit,
+) {
+    val linked = entry.episodeId != null
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            entry.title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        entry.feedTitle?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            formatHistoryTimestamp(entry.timestamp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        if (!linked) {
+            val fallback = entry.episodeUrl ?: entry.feedUrl
+            fallback?.let {
+                Text(
+                    "Imported history item: $it",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            TextButton(onClick = onPlay, enabled = linked) { Text("Play") }
+            TextButton(onClick = onQueue, enabled = linked) { Text("Queue") }
+        }
+        HorizontalDivider()
     }
 }
 
@@ -2731,6 +2833,14 @@ private fun formatDuration(milliseconds: Long): String {
         "%d:%02d".format(minutes, seconds)
     }
 }
+
+private fun formatHistoryTimestamp(timestamp: Long): String =
+    if (timestamp <= 0L) {
+        "Imported history"
+    } else {
+        DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+            .format(Date(timestamp))
+    }
 
 private fun formatBytes(bytes: Long): String = when {
     bytes >= 1024L * 1024L * 1024L ->
